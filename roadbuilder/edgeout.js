@@ -53,7 +53,6 @@ var search_edge = function (origin, distance, isLeft, dir, corner) {
     for (var i = 0; i < distance; i++) {
         lines.push(origin);
         lines_string.push(String(origin));
-        player.print(dx + "," + dz);
         var left = vectorAt(dz, 0, -dx);
         var right = vectorAt(-dz, 0, dx);
         if (!isLeft) {
@@ -123,15 +122,23 @@ if (dir.getY()) {
     }
     var base_mat = String(blocks.getBlock(origin));
     var aim_mat = context.getBlock(argv[1]);
+    var placed = {};
+    var placed_count = 0;
     for (var i = 1; i < lines.length; i++) {
         var delta = lines[i].subtract(lines[i - 1]);
         delta = vectorAt(delta.getX(), 0, delta.getZ());
         for (var l in lin) {
-            if (((left && delta.cross(lin[l]).getY() > 0) || (!left && delta.cross(lin[l]).getY() < 0)) && String(blocks.getBlock(lines[i].add(lin[l]))) != base_mat) {
-                blocks.setBlock(lines[i].add(lin[l]), aim_mat);
+            var target = lines[i].add(lin[l]);
+            if (((left && delta.cross(lin[l]).getY() > 0) || (!left && delta.cross(lin[l]).getY() < 0)) && String(blocks.getBlock(target)) != base_mat) {
+                blocks.setBlock(target, aim_mat);
+                if (!placed[String(target)]) {
+                    placed[String(target)] = true;
+                    placed_count++;
+                }
             }
         }
     }
+    player.print("路径总长" + lines.length + "个方块，已向外扩展" + placed_count + "个方块");
 }
 // context.checkArgs(1, 1, "<材料> [left/right/corner/lc/rc] [距离范围]");
 // for (var i in lines)
