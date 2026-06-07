@@ -110,7 +110,11 @@ if (!material || (side != "l" && side != "left" && side != "r" && side != "right
         if (crossY == 0) continue;
 
         var turnsRight = crossY < 0;
-        var corner = chooseRight == turnsRight ? path[i + 1] : path[i];
+        // A side's corner is the actual vertex of the opposite-handed turn.
+        // Shifting other turns forward can place the marker on a straight run.
+        if (chooseRight == turnsRight) continue;
+
+        var corner = path[i];
         if (!cornerKeys[key(corner)]) {
             cornerKeys[key(corner)] = true;
             corners.push(corner);
