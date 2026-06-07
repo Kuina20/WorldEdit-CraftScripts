@@ -5,6 +5,27 @@ var blocks = context.remember();
 var session = context.getSession();
 var player = context.getPlayer();
 
+// WorldEdit 6 uses Vector, while WorldEdit 7 uses BlockVector3.
+var vectorAt;
+try {
+    BlockVector3.at(0, 0, 0);
+    vectorAt = function (x, y, z) {
+        return BlockVector3.at(x, y, z);
+    }
+} catch (e) {
+    vectorAt = function (x, y, z) {
+        return new Vector(x, y, z);
+    }
+}
+
+var getBlockOn = function () {
+    var origin = player.getBlockOn();
+    if (origin.toVector) origin = origin.toVector();
+    if (origin.toBlockPoint) return origin.toBlockPoint();
+    if (origin.toBlockVector) return origin.toBlockVector();
+    return origin;
+}
+
 var search_line = function (origin, isLeft, distance) {
     var aim_blc_type = blocks.getBlock(origin);
     var line_blc_type = String(aim_blc_type);
@@ -12,25 +33,25 @@ var search_line = function (origin, isLeft, distance) {
     var lines_string = [];
     var shape = "straight";
 
-    var up = BlockVector3.at(0, 1, 0);
-    var down = BlockVector3.at(0, -1, 0);
+    var up = vectorAt(0, 1, 0);
+    var down = vectorAt(0, -1, 0);
     var is_online = function (o, dir) {
         var pos = o.add(dir);
         if (lines_string.indexOf(String(pos)) != -1) return false;
         if (String(blocks.getBlock(pos.add(up))) == line_blc_type) return false;
         return String(blocks.getBlock(pos)) == line_blc_type;
     }
-    var dir = BlockVector3.at(1, 0, 0);
+    var dir = vectorAt(1, 0, 0);
     if (String(blocks.getBlock(origin.subtract(dir))) == line_blc_type) {
-        dir = BlockVector3.at(-1, 0, 0);
+        dir = vectorAt(-1, 0, 0);
     }
     var dx = dir.getX(), dz = dir.getZ();
     for (var i = 0; i < distance; i++) {
         lines.push(origin);
         lines_string.push(String(origin));
-        var left = BlockVector3.at(dz, 0, -dx);
-        var right = BlockVector3.at(-dz, 0, dx);
-        var straight = BlockVector3.at(dx, 0, dz);
+        var left = vectorAt(dz, 0, -dx);
+        var right = vectorAt(-dz, 0, dx);
+        var straight = vectorAt(dx, 0, dz);
         var skewleft = left.add(straight);
         var skewright = right.add(straight);
         if (is_online(origin, left.add(up))) {
@@ -134,13 +155,13 @@ var search_line = function (origin, isLeft, distance) {
         dz = dir.getZ();
 
         origin = origin.add(dir);
-        if (is_online(origin, BlockVector3.at(0, -1, 0))) {
-            lines_string.push(String(origin.add(BlockVector3.at(0, -1, 0))));
+        if (is_online(origin, vectorAt(0, -1, 0))) {
+            lines_string.push(String(origin.add(vectorAt(0, -1, 0))));
         }
     }
     return lines;
 }
 var distance = (Math.min(argv[2], 400) || 400);
 var isLeft = argv[1];
-var lines = search_line(player.getBlockOn().toVector().toBlockPoint(), isLeft, distance);
+var lines = search_line(getBlockOn(), isLeft, distance);
 player.print("路径总长"+lines.length+"个方块");

@@ -8,7 +8,24 @@ importPackage(Packages.java.io);
 importPackage(Packages.java.awt);
 importPackage(Packages.javax.imageio);
 importPackage(Packages.com.sk89q.worldedit);
+importPackage(Packages.com.sk89q.worldedit.math);
 importPackage(Packages.com.sk89q.worldedit.blocks);
+
+function blockPoint(pos) {
+	if (pos.toVector) pos = pos.toVector();
+	if (pos.toBlockPoint) return pos.toBlockPoint();
+	if (pos.toBlockVector) return pos.toBlockVector();
+	return pos;
+}
+var isWorldEdit7 = true;
+try {
+	BlockVector3.at(0, 0, 0);
+} catch (e) {
+	isWorldEdit7 = false;
+}
+function getBlockCompat(modern, legacy) {
+	return context.getBlock(isWorldEdit7 ? modern : legacy);
+}
 
 function makeColor(r, g, b) {
     return new Color(r / 255, g / 255, b / 255);
@@ -22,11 +39,11 @@ var clothColors = [
     makeColor(0, 255, 0) //vu
 ];
 var clothBlocks = [
-	context.getBlock("white_concrete"),
-	context.getBlock("yellow_terracotta"),
-	context.getBlock("brown_concrete"),
+	getBlockCompat("white_concrete", "concrete:0"),
+	getBlockCompat("yellow_terracotta", "stained_hardened_clay:4"),
+	getBlockCompat("brown_concrete", "concrete:12"),
 	context.getBlock("glass"),
-	context.getBlock("lime_terracotta")
+	getBlockCompat("lime_terracotta", "stained_hardened_clay:5")
 ];
 
 // http://stackoverflow.com/questions/2103368/color-logic-algorithm/2103608#2103608
@@ -71,7 +88,7 @@ if (!f.exists()) {
     var width = img.getWidth();
     var height = img.getHeight();
 
-    var origin = player.getBlockIn().toVector().toBlockPoint();
+    var origin = blockPoint(player.getBlockIn());
 	var radius = Number(argv[3])+1;
 	player.print(radius);
 	var R2min = (radius-3)*(radius-3);

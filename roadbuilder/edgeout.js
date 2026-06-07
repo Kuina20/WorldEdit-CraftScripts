@@ -5,6 +5,21 @@ var blocks = context.remember();
 var session = context.getSession();
 var player = context.getPlayer();
 
+var vectorAt;
+try {
+    BlockVector3.at(0, 0, 0);
+    vectorAt = function (x, y, z) { return BlockVector3.at(x, y, z); }
+} catch (e) {
+    vectorAt = function (x, y, z) { return new Vector(x, y, z); }
+}
+var blockPoint = function (pos) {
+    if (pos.toVector) pos = pos.toVector();
+    if (pos.vector) pos = pos.vector();
+    if (pos.toBlockPoint) return pos.toBlockPoint();
+    if (pos.toBlockVector) return pos.toBlockVector();
+    return pos;
+}
+
 // 深度优先算法获取路径 lines
 var search_edge = function (origin, distance, isLeft, dir, corner) {
     var line_blc_type = String(blocks.getBlock(origin));
@@ -17,8 +32,8 @@ var search_edge = function (origin, distance, isLeft, dir, corner) {
         return String(blocks.getBlock(pos)) == line_blc_type;
     }
     var dx = dir.getX(), dz = dir.getZ();
-    var up = BlockVector3.at(0, 1, 0);
-    var down = BlockVector3.at(0, -1, 0);
+    var up = vectorAt(0, 1, 0);
+    var down = vectorAt(0, -1, 0);
     var corner_remove = function (delay) {
         if (!corner) return;
         if (is_corner == 0) {
@@ -39,14 +54,14 @@ var search_edge = function (origin, distance, isLeft, dir, corner) {
         lines.push(origin);
         lines_string.push(String(origin));
         player.print(dx + "," + dz);
-        var left = BlockVector3.at(dz, 0, -dx);
-        var right = BlockVector3.at(-dz, 0, dx);
+        var left = vectorAt(dz, 0, -dx);
+        var right = vectorAt(-dz, 0, dx);
         if (!isLeft) {
             var temp = left;
             left = right;
             right = temp;
         }
-        var straight = BlockVector3.at(dx, 0, dz);
+        var straight = vectorAt(dx, 0, dz);
         if (is_online(origin, left)) {
             dir = left; corner_remove(true);
         } else if (is_online(origin, left.add(up))) {
@@ -85,32 +100,32 @@ if (argv[2] == "l" || argv[2] == "left" || argv[2] == "lc") {
 } else if (argv[2] == "r" || argv[2] == "right" || argv[2] == "rc") {
     left = false;
 }
-var dir = player.getCardinalDirection().toVector();
+var dir = blockPoint(player.getCardinalDirection());
 if (dir.getY()) {
     player.printError("请水平方向看");
 } else {
     var distance = (Math.min(argv[3], 400) || 400);
-    var origin = player.getBlockOn().toVector().toBlockPoint();
+    var origin = blockPoint(player.getBlockOn());
     var lines = search_edge(origin, distance, left, dir, true);
     var lin = [
-        BlockVector3.at(0, 0, -1),
-        BlockVector3.at(0, 0, 1),
-        BlockVector3.at(1, 0, 0),
-        BlockVector3.at(-1, 0, 0)
+        vectorAt(0, 0, -1),
+        vectorAt(0, 0, 1),
+        vectorAt(1, 0, 0),
+        vectorAt(-1, 0, 0)
     ];
     if (corner) {
         lin = lin.concat([
-            BlockVector3.at(-1, 0, -1),
-            BlockVector3.at(-1, 0, 1),
-            BlockVector3.at(1, 0, -1),
-            BlockVector3.at(1, 0, 1)
+            vectorAt(-1, 0, -1),
+            vectorAt(-1, 0, 1),
+            vectorAt(1, 0, -1),
+            vectorAt(1, 0, 1)
         ]);
     }
     var base_mat = String(blocks.getBlock(origin));
     var aim_mat = context.getBlock(argv[1]);
     for (var i = 1; i < lines.length; i++) {
         var delta = lines[i].subtract(lines[i - 1]);
-        delta = BlockVector3.at(delta.getX(), 0, delta.getZ());
+        delta = vectorAt(delta.getX(), 0, delta.getZ());
         for (var l in lin) {
             if (((left && delta.cross(lin[l]).getY() > 0) || (!left && delta.cross(lin[l]).getY() < 0)) && String(blocks.getBlock(lines[i].add(lin[l]))) != base_mat) {
                 blocks.setBlock(lines[i].add(lin[l]), aim_mat);

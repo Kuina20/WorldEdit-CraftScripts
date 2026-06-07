@@ -5,11 +5,25 @@ var blocks = context.remember();
 var session = context.getSession();
 var player = context.getPlayer();
 
+var vectorAt;
+try {
+    BlockVector3.at(0, 0, 0);
+    vectorAt = function (x, y, z) { return BlockVector3.at(x, y, z); }
+} catch (e) {
+    vectorAt = function (x, y, z) { return new Vector(x, y, z); }
+}
+var blockPoint = function (pos) {
+    if (pos.toVector) pos = pos.toVector();
+    if (pos.toBlockPoint) return pos.toBlockPoint();
+    if (pos.toBlockVector) return pos.toBlockVector();
+    return pos;
+}
+
 var search_line = function (origin, distance) {
     var line_blc_type = String(blocks.getBlock(origin)).split("[")[0];
     var lines = [];
     var lines_string = [];
-    var nopower = argv[1].indexOf("n") != -1;
+    var nopower = argv[1] && argv[1].indexOf("n") != -1;
     var shape = "straight";
     var shapes = [];
     var is_online = function (o, dir) {
@@ -26,19 +40,19 @@ var search_line = function (origin, distance) {
         }
         return false;
     }
-    var dir = BlockVector3.at(1, 0, 0);
+    var dir = vectorAt(1, 0, 0);
     if (String(blocks.getBlock(origin.subtract(dir))).split("[")[0] == line_blc_type) {
-        dir = BlockVector3.at(-1, 0, 0);
+        dir = vectorAt(-1, 0, 0);
     }
     var dx = dir.getX(), dz = dir.getZ();
-    var up = BlockVector3.at(0, 1, 0);
-    var down = BlockVector3.at(0, -1, 0);
+    var up = vectorAt(0, 1, 0);
+    var down = vectorAt(0, -1, 0);
     for (var i = 0; i < distance; i++) {
         lines.push(origin);
         lines_string.push(String(origin));
-        var left = BlockVector3.at(dz, 0, -dx);
-        var right = BlockVector3.at(-dz, 0, dx);
-        var straight = BlockVector3.at(dx, 0, dz);
+        var left = vectorAt(dz, 0, -dx);
+        var right = vectorAt(-dz, 0, dx);
+        var straight = vectorAt(dx, 0, dz);
         if (is_online(origin, left.add(up))) {
             shape = getShape(dir, left.add(up));
             dir = left.add(up);
@@ -73,7 +87,7 @@ var search_line = function (origin, distance) {
         dz = dir.getZ();
         shapes.push(shape);
         origin = origin.add(dir);
-        blocks.setBlock(lines[i].add(BlockVector3.at(0, 1, 0)), context.getBlock(shape && !nopower ? "powered_rail" : "rail"));
+        blocks.setBlock(lines[i].add(vectorAt(0, 1, 0)), context.getBlock(shape && !nopower ? "powered_rail" : "rail"));
     }
     player.print("线路总共长" + lines.length + "个方块")
     if (nopower) return;
@@ -87,7 +101,7 @@ var search_line = function (origin, distance) {
                 shapeCount = -1;
             } else if (shapeCount == -1) {
                 if (shapes[i] === true) {
-                    blocks.setBlock(lines[i].add(BlockVector3.at(0, 1, 0)), context.getBlock("detector_rail"));
+                    blocks.setBlock(lines[i].add(vectorAt(0, 1, 0)), context.getBlock("detector_rail"));
                     isdetector[i] = true;
                 }
                 shapeCount++;
@@ -104,7 +118,7 @@ var search_line = function (origin, distance) {
                 shapeCount = -1;
             } else if (shapeCount == -1) {
                 if (shapes[i] === true) {
-                    blocks.setBlock(lines[i].add(BlockVector3.at(0, 1, 0)), context.getBlock("detector_rail"));
+                    blocks.setBlock(lines[i].add(vectorAt(0, 1, 0)), context.getBlock("detector_rail"));
                     isdetector[i] = true;
                 }
                 shapeCount++;
@@ -122,20 +136,20 @@ var search_line = function (origin, distance) {
             } else {
                 shapeCount++;
                 if (shapeCount > 6) {
-                    blocks.setBlock(lines[i - 2].add(BlockVector3.at(0, 1, 0)), context.getBlock("detector_rail"));
+                    blocks.setBlock(lines[i - 2].add(vectorAt(0, 1, 0)), context.getBlock("detector_rail"));
                     shapeCount = 0;
                 }
             }
             if (i < lines.length - 1 && isdetector[i] && isdetector[i + 1]) {
-                blocks.setBlock(lines[i].add(BlockVector3.at(0, 1, 0)), context.getBlock("powered_rail"));
-                blocks.setBlock(lines[i + 1].add(BlockVector3.at(0, 1, 0)), context.getBlock("powered_rail"));
+                blocks.setBlock(lines[i].add(vectorAt(0, 1, 0)), context.getBlock("powered_rail"));
+                blocks.setBlock(lines[i + 1].add(vectorAt(0, 1, 0)), context.getBlock("powered_rail"));
             }
             if (i > 0 && i < lines.length - 1 && isdetector[i] && shapes[i + 1] === false && shapes[i - 1] === false) {
-                blocks.setBlock(lines[i].add(BlockVector3.at(0, 1, 0)), context.getBlock("powered_rail"));
+                blocks.setBlock(lines[i].add(vectorAt(0, 1, 0)), context.getBlock("powered_rail"));
             }
         }
     }
     return lines;
 }
 var distance = (Math.min(argv[3], 400) || 400);
-var lines = search_line(player.getBlockOn().toVector().toBlockPoint(), distance);
+var lines = search_line(blockPoint(player.getBlockOn()), distance);

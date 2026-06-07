@@ -4,6 +4,12 @@
 */
 importPackage(Packages.com.sk89q.worldedit);
 importPackage(Packages.com.sk89q.worldedit.blocks);
+function blockPoint(pos) {
+	if (pos.toVector) pos = pos.toVector();
+	if (pos.toBlockPoint) return pos.toBlockPoint();
+	if (pos.toBlockVector) return pos.toBlockVector();
+	return pos;
+}
 var fy = (Math.sqrt(5)+1)/2;
 var verticesList = [[0,1,fy],[1,fy,0],[fy,0,1],[0,-1,fy],[-1,fy,0],[fy,0,-1]];
 function getRing(x,y,z,blc1,blc2,ringWidth){
@@ -26,7 +32,7 @@ var sess = context.remember();
 
 var blc1 = context.getBlock(argv[1]);
 var blc2 = context.getBlock(argv[2]);
-var origin = player.getBlockIn().toVector().toBlockPoint();
+var origin = blockPoint(player.getBlockIn());
 var radius = Number(argv[3]);
 var ringWidth = Number(argv[4]);
 var R2min = (radius-1)*(radius-1);

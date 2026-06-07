@@ -2,6 +2,49 @@ importPackage(Packages.com.sk89q.worldedit);
 importPackage(Packages.com.sk89q.worldedit.math);
 importPackage(Packages.com.sk89q.worldedit.blocks);
 
+var vectorAt;
+var vector3At;
+var vector2At;
+var isWorldEdit7 = true;
+try {
+    BlockVector3.at(0, 0, 0);
+    vectorAt = function (x, y, z) { return BlockVector3.at(x, y, z); }
+    vector3At = function (x, y, z) { return Vector3.at(x, y, z); }
+    vector2At = function (x, z) { return Vector2.at(x, z); }
+} catch (e) {
+    isWorldEdit7 = false;
+    vectorAt = function (x, y, z) { return new Vector(x, y, z); }
+    vector3At = vectorAt;
+    vector2At = function (x, z) { return new Vector2D(x, z); }
+}
+var blockPoint = function (pos) {
+    if (pos.toVector) pos = pos.toVector();
+    if (pos.toBlockPoint) return pos.toBlockPoint();
+    if (pos.toBlockVector) return pos.toBlockVector();
+    return pos;
+}
+var blockSpec = function (block) {
+    if (isWorldEdit7) return String(block);
+    if (block.getId() == 0) return "minecraft:air";
+    if (block.getId() == 217) return "minecraft:structure_void";
+    if (block.getId() == 255) return "minecraft:structure_block";
+    return block.getId() + ":" + block.getData();
+}
+var getBlockCompat = function (spec) {
+    if (isWorldEdit7) return context.getBlock(spec);
+    var legacyBlocks = {
+        grass_block: "grass",
+        white_terracotta: "stained_hardened_clay:0",
+        yellow_terracotta: "stained_hardened_clay:4",
+        gray_terracotta: "stained_hardened_clay:7",
+        yellow_wool: "wool:4",
+        "smooth_stone_slab[type=bottom]": "stone_slab:0",
+        "smooth_stone_slab[type=top]": "stone_slab:8",
+        red_sandstone_wall: "cobblestone_wall:0"
+    };
+    return context.getBlock(legacyBlocks[spec] || spec);
+}
+
 var road_type = {
     "小路陡路基": {
         base_material: [
@@ -302,24 +345,24 @@ var road_type = {
                 "void",
                 "void",
                 "void",
-                "stone,2;void,10",
-                "stone,2;void,10",
+                "stone#2;void#10",
+                "stone#2;void#10",
             ],
             [
                 -3,
                 "void",
                 "void",
                 "void",
-                "stone,2;void,10",
-                "stone,2;void,10",
+                "stone#2;void#10",
+                "stone#2;void#10",
             ],
             [
                 -4,
                 "void",
                 "void",
                 "void",
-                "stone,2;void,10",
-                "stone,2;void,10",
+                "stone#2;void#10",
+                "stone#2;void#10",
             ]
         ],
         contours: [
@@ -351,12 +394,12 @@ var loadConfigFromRegion = function (region, flag, symetry) {
     for (var x = x1 - 1; x <= x2 + 1; x++) {
         for (var y = y1; y <= y2; y++) {
             for (var z = z1 - 1; z <= z2 + 1; z++) {
-                if ((x == x1 - 1 || x == x2 + 1 || z == z1 - 1 || z == z2 + 1) && String(blocks.getBlock(BlockVector3.at(x, y, z))).indexOf("minecraft:structure_block") == 0) {
+                if ((x == x1 - 1 || x == x2 + 1 || z == z1 - 1 || z == z2 + 1) && blockSpec(blocks.getBlock(vectorAt(x, y, z))).indexOf("minecraft:structure_block") == 0) {
                     if (!locator) {
                         locator = {
                             x: x, y: y, z: z,
-                            pos: BlockVector3.at(x, y, z),
-                            dir: x == x1 - 1 ? BlockVector3.at(1, 0, 0) : x == x2 + 1 ? BlockVector3.at(-1, 0, 0) : z == z1 - 1 ? BlockVector3.at(0, 0, 1) : z == z2 + 1 ? BlockVector3.at(0, 0, -1) : null
+                            pos: vectorAt(x, y, z),
+                            dir: x == x1 - 1 ? vectorAt(1, 0, 0) : x == x2 + 1 ? vectorAt(-1, 0, 0) : z == z1 - 1 ? vectorAt(0, 0, 1) : z == z2 + 1 ? vectorAt(0, 0, -1) : null
                         };
                     } else {
                         player.printError("意外的放样配置：选区边界发现多个结构方块定位器");
@@ -394,7 +437,7 @@ var loadConfigFromRegion = function (region, flag, symetry) {
             for (var z = locator.z; z <= z2; z++) {
                 var arr = [];
                 for (var x = x1; x <= x2; x++) {
-                    var block = String(blocks.getBlock(BlockVector3.at(x, y, z)));
+                    var block = blockSpec(blocks.getBlock(vectorAt(x, y, z)));
                     if (block == "minecraft:air") block = "void";
                     if (block == "minecraft:structure_void") block = "air";
                     arr.push(block);
@@ -423,7 +466,7 @@ var loadConfigFromRegion = function (region, flag, symetry) {
             for (var z = locator.z; z >= z1; z--) {
                 var arr = [];
                 for (var x = x1; x <= x2; x++) {
-                    var block = String(blocks.getBlock(BlockVector3.at(x, y, z)));
+                    var block = blockSpec(blocks.getBlock(vectorAt(x, y, z)));
                     if (block == "minecraft:air") block = "void";
                     if (block == "minecraft:structure_void") block = "air";
                     arr.push(block);
@@ -460,7 +503,7 @@ var loadConfigFromRegion = function (region, flag, symetry) {
             for (var x = locator.x; x <= x2; x++) {
                 var arr = [];
                 for (var z = z1; z <= z2; z++) {
-                    var block = String(blocks.getBlock(BlockVector3.at(x, y, z)));
+                    var block = blockSpec(blocks.getBlock(vectorAt(x, y, z)));
                     if (block == "minecraft:air") block = "void";
                     if (block == "minecraft:structure_void") block = "air";
                     arr.push(block);
@@ -491,7 +534,7 @@ var loadConfigFromRegion = function (region, flag, symetry) {
             for (var x = locator.x; x >= x1; x--) {
                 var arr = [];
                 for (var z = z1; z <= z2; z++) {
-                    var block = String(blocks.getBlock(BlockVector3.at(x, y, z)));
+                    var block = blockSpec(blocks.getBlock(vectorAt(x, y, z)));
                     if (block == "minecraft:air") block = "void";
                     if (block == "minecraft:structure_void") block = "air";
                     arr.push(block);
@@ -526,7 +569,7 @@ var loadConfigFromRegion = function (region, flag, symetry) {
 };
 // 深度优先算法获取路径 lines
 var search_line = function (origin) {
-    var line_blc_type = String(blocks.getBlock(origin));
+    var line_blc_type = blockSpec(blocks.getBlock(origin));
     if (line_blc_type == "minecraft:air") {
         player.printError("请勿双脚离地！");
         return;
@@ -535,7 +578,7 @@ var search_line = function (origin) {
     var lines_string = [];
     var is_online = function (pos) {
         if (lines_string.indexOf(String(pos)) != -1) return false;
-        return String(blocks.getBlock(pos)) == line_blc_type;
+        return blockSpec(blocks.getBlock(pos)) == line_blc_type;
     }
     var dx = 0, dy = 0, dz = 0;
     var total_length = 0;
@@ -544,64 +587,64 @@ var search_line = function (origin) {
         lines.push({ pos: origin, distance: total_length });
         lines_string.push(String(origin));
         // up hill 直走
-        if (is_online(origin.add(BlockVector3.at(1, 1, 0))) && !(dx == -1 && dy == -1 && dz == 0)) {
+        if (is_online(origin.add(vectorAt(1, 1, 0))) && !(dx == -1 && dy == -1 && dz == 0)) {
             dx = 1; dy = 1; dz = 0;
-        } else if (is_online(origin.add(BlockVector3.at(-1, 1, 0))) && !(dx == 1 && dy == -1 && dz == 0)) {
+        } else if (is_online(origin.add(vectorAt(-1, 1, 0))) && !(dx == 1 && dy == -1 && dz == 0)) {
             dx = -1; dy = 1; dz = 0;
-        } else if (is_online(origin.add(BlockVector3.at(0, 1, 1))) && !(dx == 0 && dy == -1 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(0, 1, 1))) && !(dx == 0 && dy == -1 && dz == -1)) {
             dx = 0; dy = 1; dz = 1;
-        } else if (is_online(origin.add(BlockVector3.at(0, 1, -1))) && !(dx == 0 && dy == -1 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(0, 1, -1))) && !(dx == 0 && dy == -1 && dz == 1)) {
             dx = 0; dy = 1; dz = -1;
             // 先把当前平面直角走完，不然上坡之前的对角会跳过直角方块
-        } else if (is_online(origin.add(BlockVector3.at(1, 0, 0))) && !(dx == -1 && dy == 0 && dz == 0)) {
+        } else if (is_online(origin.add(vectorAt(1, 0, 0))) && !(dx == -1 && dy == 0 && dz == 0)) {
             dx = 1; dy = 0; dz = 0;
-        } else if (is_online(origin.add(BlockVector3.at(-1, 0, 0))) && !(dx == 1 && dy == 0 && dz == 0)) {
+        } else if (is_online(origin.add(vectorAt(-1, 0, 0))) && !(dx == 1 && dy == 0 && dz == 0)) {
             dx = -1; dy = 0; dz = 0;
-        } else if (is_online(origin.add(BlockVector3.at(0, 0, 1))) && !(dx == 0 && dy == 0 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(0, 0, 1))) && !(dx == 0 && dy == 0 && dz == -1)) {
             dx = 0; dy = 0; dz = 1;
-        } else if (is_online(origin.add(BlockVector3.at(0, 0, -1))) && !(dx == 0 && dy == 0 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(0, 0, -1))) && !(dx == 0 && dy == 0 && dz == 1)) {
             dx = 0; dy = 0; dz = -1;
             //up hill again
-        } else if (is_online(origin.add(BlockVector3.at(1, 1, 1))) && !(dx == -1 && dy == -1 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(1, 1, 1))) && !(dx == -1 && dy == -1 && dz == -1)) {
             dx = 1; dy = 1; dz = 1;
-        } else if (is_online(origin.add(BlockVector3.at(-1, 1, -1))) && !(dx == 1 && dy == -1 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(-1, 1, -1))) && !(dx == 1 && dy == -1 && dz == 1)) {
             dx = -1; dy = 1; dz = -1;
-        } else if (is_online(origin.add(BlockVector3.at(1, 1, -1))) && !(dx == -1 && dy == -1 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(1, 1, -1))) && !(dx == -1 && dy == -1 && dz == 1)) {
             dx = 1; dy = 1; dz = -1;
-        } else if (is_online(origin.add(BlockVector3.at(-1, 1, 1))) && !(dx == 1 && dy == -1 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(-1, 1, 1))) && !(dx == 1 && dy == -1 && dz == -1)) {
             dx = -1; dy = 1; dz = 1;
             // planar
-        } else if (is_online(origin.add(BlockVector3.at(1, 0, 1))) && !(dx == -1 && dy == 0 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(1, 0, 1))) && !(dx == -1 && dy == 0 && dz == -1)) {
             dx = 1; dy = 0; dz = 1;
-        } else if (is_online(origin.add(BlockVector3.at(-1, 0, -1))) && !(dx == 1 && dy == 0 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(-1, 0, -1))) && !(dx == 1 && dy == 0 && dz == 1)) {
             dx = -1; dy = 0; dz = -1;
-        } else if (is_online(origin.add(BlockVector3.at(1, 0, -1))) && !(dx == -1 && dy == 0 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(1, 0, -1))) && !(dx == -1 && dy == 0 && dz == 1)) {
             dx = 1; dy = 0; dz = -1;
-        } else if (is_online(origin.add(BlockVector3.at(-1, 0, 1))) && !(dx == 1 && dy == 0 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(-1, 0, 1))) && !(dx == 1 && dy == 0 && dz == -1)) {
             dx = -1; dy = 0; dz = 1;
             // down hill
-        } else if (is_online(origin.add(BlockVector3.at(1, -1, 0))) && !(dx == -1 && dy == 1 && dz == 0)) {
+        } else if (is_online(origin.add(vectorAt(1, -1, 0))) && !(dx == -1 && dy == 1 && dz == 0)) {
             dx = 1; dy = -1; dz = 0;
-        } else if (is_online(origin.add(BlockVector3.at(-1, -1, 0))) && !(dx == 1 && dy == 1 && dz == 0)) {
+        } else if (is_online(origin.add(vectorAt(-1, -1, 0))) && !(dx == 1 && dy == 1 && dz == 0)) {
             dx = -1; dy = -1; dz = 0;
-        } else if (is_online(origin.add(BlockVector3.at(0, -1, 1))) && !(dx == 0 && dy == 1 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(0, -1, 1))) && !(dx == 0 && dy == 1 && dz == -1)) {
             dx = 0; dy = -1; dz = 1;
-        } else if (is_online(origin.add(BlockVector3.at(0, -1, -1))) && !(dx == 0 && dy == 1 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(0, -1, -1))) && !(dx == 0 && dy == 1 && dz == 1)) {
             dx = 0; dy = -1; dz = -1;
-        } else if (is_online(origin.add(BlockVector3.at(1, -1, 1))) && !(dx == -1 && dy == 1 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(1, -1, 1))) && !(dx == -1 && dy == 1 && dz == -1)) {
             dx = 1; dy = -1; dz = 1;
-        } else if (is_online(origin.add(BlockVector3.at(-1, -1, -1))) && !(dx == 1 && dy == 1 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(-1, -1, -1))) && !(dx == 1 && dy == 1 && dz == 1)) {
             dx = -1; dy = -1; dz = -1;
-        } else if (is_online(origin.add(BlockVector3.at(1, -1, -1))) && !(dx == -1 && dy == 1 && dz == 1)) {
+        } else if (is_online(origin.add(vectorAt(1, -1, -1))) && !(dx == -1 && dy == 1 && dz == 1)) {
             dx = 1; dy = -1; dz = -1;
-        } else if (is_online(origin.add(BlockVector3.at(-1, -1, 1))) && !(dx == 1 && dy == 1 && dz == -1)) {
+        } else if (is_online(origin.add(vectorAt(-1, -1, 1))) && !(dx == 1 && dy == 1 && dz == -1)) {
             dx = -1; dy = -1; dz = 1;
         } else {
             break;
         }
-        origin = origin.add(BlockVector3.at(dx, dy, dz));
-        if (is_online(origin.add(BlockVector3.at(0, -1, 0)))) {
-            lines_string.push(String(origin.add(BlockVector3.at(0, -1, 0))));
+        origin = origin.add(vectorAt(dx, dy, dz));
+        if (is_online(origin.add(vectorAt(0, -1, 0)))) {
+            lines_string.push(String(origin.add(vectorAt(0, -1, 0))));
         }
     }
     return lines;
@@ -611,10 +654,10 @@ var compute_roadmap = function (lines, max_width, seg_num, symetry) {
     //为了获取高质量的纵向参数化，需要将道路中线平滑处理
     for (var l = 1; l < lines.length - 1; l++) {
         var temp = lines[l - 1].pos.add(lines[l + 1].pos).add(lines[l].pos).add(lines[l].pos);
-        lines[l].smooth_pos = Vector2.at(temp.getX() / 4, temp.getZ() / 4);
+        lines[l].smooth_pos = vector2At(temp.getX() / 4, temp.getZ() / 4);
     }
-    lines[0].smooth_pos = Vector2.at(lines[0].pos.getX(), lines[0].pos.getZ());
-    lines[lines.length - 1].smooth_pos = Vector2.at(lines[lines.length - 1].pos.getX(), lines[lines.length - 1].pos.getZ());
+    lines[0].smooth_pos = vector2At(lines[0].pos.getX(), lines[0].pos.getZ());
+    lines[lines.length - 1].smooth_pos = vector2At(lines[lines.length - 1].pos.getX(), lines[lines.length - 1].pos.getZ());
     for (var it = 0; it < 50; it++) {
         for (var l = 1; l < lines.length - 1; l++) {
             lines[l].smooth_pos2 = lines[l - 1].smooth_pos.add(lines[l + 1].smooth_pos).add(lines[l].smooth_pos).add(lines[l].smooth_pos).divide(4.0);
@@ -677,7 +720,7 @@ var compute_roadmap = function (lines, max_width, seg_num, symetry) {
             } else {
                 dl = lines[l_idx].smooth_pos.subtract(lines[l_idx - 1].smooth_pos);
             }
-            var z_axis = Vector3.at(p_o[0] - l_o.getX(), 0, p_o[1] - l_o.getZ()).cross(Vector3.at(dl.getX(), 0, dl.getZ()));
+            var z_axis = vector3At(p_o[0] - l_o.getX(), 0, p_o[1] - l_o.getZ()).cross(vector3At(dl.getX(), 0, dl.getZ()));
             if (z_axis.getY() >= 0) {
                 ranges[index].l = true;
             }
@@ -761,7 +804,7 @@ var parse_and_set_block_patern = function (pos, str, l_index, line, symetry, map
                 var count = Number(info[1]) || 1;
                 period += count;
                 for (var i = 0; i < count; i++) {
-                    pattern.push(blc_type == "void" ? null : context.getBlock(blc_type));
+                    pattern.push(blc_type == "void" ? null : getBlockCompat(blc_type));
                 }
             });
             if (norm1) {
@@ -778,7 +821,7 @@ var parse_and_set_block_patern = function (pos, str, l_index, line, symetry, map
                 }
             }
         } else if (str && str != "void") {
-            var block = context.getBlock(str);
+            var block = getBlockCompat(str);
             blocks.setBlock(pos, block);
             add2needFixTable(pos, block);
         }
@@ -798,7 +841,7 @@ var build_road = function (line, roadmap, roadtype, symetry) {
         roadtype.base_material.forEach(function (layer) {
             if (layer[Math.floor(distance) + 1] && l_index > loftStart && l_index < loftEnd) {
                 parse_and_set_block_patern(
-                    BlockVector3.at(pos[0], roadY + layer[0], pos[1]),
+                    vectorAt(pos[0], roadY + layer[0], pos[1]),
                     layer[Math.floor(distance) + 1],
                     l_index,
                     line,
@@ -810,7 +853,7 @@ var build_road = function (line, roadmap, roadtype, symetry) {
         roadtype.contours.forEach(function (contour) {
             if (map_blc["contour-" + contour[0]] === true) {
                 parse_and_set_block_patern(
-                    BlockVector3.at(pos[0], roadY + contour[1], pos[1]),
+                    vectorAt(pos[0], roadY + contour[1], pos[1]),
                     contour[2],
                     l_index,
                     line,
@@ -822,7 +865,7 @@ var build_road = function (line, roadmap, roadtype, symetry) {
         roadtype.segments.forEach(function (seg) {
             if (map_blc["segment-" + seg[2]] === true && Math.floor(distance) == seg[0]) {
                 parse_and_set_block_patern(
-                    BlockVector3.at(pos[0], roadY + seg[1], pos[1]),
+                    vectorAt(pos[0], roadY + seg[1], pos[1]),
                     seg[3],
                     l_index,
                     line,
@@ -846,7 +889,7 @@ var build_road = function (line, roadmap, roadtype, symetry) {
                 ];
                 if ((distance == 0 && p[0] == 0) || p[0] > neighbors[0] || p[0] > neighbors[1] || p[0] > neighbors[2] || p[0] > neighbors[3] || p[0] > neighbors[4] || p[0] > neighbors[5] || p[0] > neighbors[6] || p[0] > neighbors[7]) {
                     parse_and_set_block_patern(
-                        BlockVector3.at(pos[0], roadY + p[1], pos[1]),
+                        vectorAt(pos[0], roadY + p[1], pos[1]),
                         p[3],
                         l_index,
                         line,
@@ -871,10 +914,10 @@ var add2needFixTable = function (pos, block) {
     }
     if (!err) needFixTable[String(pos)] = { block: block, pos: pos };
 }
-var east = BlockVector3.at(1, 0, 0);
-var west = BlockVector3.at(-1, 0, 0);
-var north = BlockVector3.at(0, 0, -1);
-var south = BlockVector3.at(0, 0, 1);
+var east = vectorAt(1, 0, 0);
+var west = vectorAt(-1, 0, 0);
+var north = vectorAt(0, 0, -1);
+var south = vectorAt(0, 0, 1);
 var fix = function () {
     for (var blc in needFixTable) {
         var block = needFixTable[blc];
@@ -982,8 +1025,8 @@ if (!road_type) {
     });
 
     road_type.seg_num = Number(road_type.seg_num);
-    var start = player.getBlockOn().toVector().toBlockPoint();
-    if (loftRange && loftRange[1] == "d") start = start.add(BlockVector3(0, -1, 0));
+    var start = blockPoint(player.getBlockOn());
+    if (loftRange && loftRange[1] == "d") start = start.add(vectorAt(0, -1, 0));
     var central_line = search_line(start);
     player.print("路径总长" + central_line.length + "个方块");
     if (central_line) {
